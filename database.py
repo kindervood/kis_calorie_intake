@@ -22,8 +22,8 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS consumption (
                 id INTEGER PRIMARY KEY,
                 dish_id INTEGER,
-                amount REAL NOT NULL,
                 date TEXT NOT NULL,
+                portion_size REAL NOT NULL,
                 FOREIGN KEY(dish_id) REFERENCES dishes(id)
             )
         ''')
