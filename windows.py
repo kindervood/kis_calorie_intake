@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from datetime import datetime
 import matplotlib.pyplot as plt
-from database import DatabaseManager
 
 class AddDishWindow:
     def __init__(self, root, db_manager):
@@ -17,28 +16,32 @@ class AddDishWindow:
         self.name_entry.grid(row=0, column=1, padx=10, pady=5)
         self.name_entry.bind('<FocusOut>', self.check_existing_dish)
 
-        tk.Label(self.add_window, text="Date Consumed (YYYY-MM-DD):").grid(row=1, column=0, padx=10, pady=5)
+        tk.Label(self.add_window, text="Portion Size (g):").grid(row=1, column=0, padx=10, pady=5)
+        self.portion_size_entry = tk.Entry(self.add_window)
+        self.portion_size_entry.grid(row=1, column=1, padx=10, pady=5)
+
+        tk.Label(self.add_window, text="Date Consumed (YYYY-MM-DD):").grid(row=2, column=0, padx=10, pady=5)
         self.date_entry = tk.Entry(self.add_window)
-        self.date_entry.grid(row=1, column=1, padx=10, pady=5)
+        self.date_entry.grid(row=2, column=1, padx=10, pady=5)
 
-        tk.Label(self.add_window, text="Kcal per 100g:").grid(row=2, column=0, padx=10, pady=5)
+        tk.Label(self.add_window, text="Kcal per 100g:").grid(row=3, column=0, padx=10, pady=5)
         self.kcal_entry = tk.Entry(self.add_window)
-        self.kcal_entry.grid(row=2, column=1, padx=10, pady=5)
+        self.kcal_entry.grid(row=3, column=1, padx=10, pady=5)
 
-        tk.Label(self.add_window, text="Protein per 100g:").grid(row=3, column=0, padx=10, pady=5)
+        tk.Label(self.add_window, text="Protein per 100g:").grid(row=4, column=0, padx=10, pady=5)
         self.protein_entry = tk.Entry(self.add_window)
-        self.protein_entry.grid(row=3, column=1, padx=10, pady=5)
+        self.protein_entry.grid(row=4, column=1, padx=10, pady=5)
 
-        tk.Label(self.add_window, text="Fat per 100g:").grid(row=4, column=0, padx=10, pady=5)
+        tk.Label(self.add_window, text="Fat per 100g:").grid(row=5, column=0, padx=10, pady=5)
         self.fat_entry = tk.Entry(self.add_window)
-        self.fat_entry.grid(row=4, column=1, padx=10, pady=5)
+        self.fat_entry.grid(row=5, column=1, padx=10, pady=5)
 
-        tk.Label(self.add_window, text="Carbs per 100g:").grid(row=5, column=0, padx=10, pady=5)
+        tk.Label(self.add_window, text="Carbs per 100g:").grid(row=6, column=0, padx=10, pady=5)
         self.carbs_entry = tk.Entry(self.add_window)
-        self.carbs_entry.grid(row=5, column=1, padx=10, pady=5)
+        self.carbs_entry.grid(row=6, column=1, padx=10, pady=5)
 
         submit_button = tk.Button(self.add_window, text="Submit", command=self.submit_dish)
-        submit_button.grid(row=6, column=0, columnspan=2, pady=10)
+        submit_button.grid(row=7, column=0, columnspan=2, pady=10)
 
     def check_existing_dish(self, event):
         name = self.name_entry.get()
@@ -62,15 +65,14 @@ class AddDishWindow:
         protein = self.protein_entry.get()
         fat = self.fat_entry.get()
         carbs = self.carbs_entry.get()
+        portion_size = self.portion_size_entry.get()
         
-        if name and date and kcal and protein and fat and carbs:
+        if name and kcal and protein and fat and carbs:
             try:
                 kcal = float(kcal)
                 protein = float(protein)
                 fat = float(fat)
                 carbs = float(carbs)
-                # Validate date format
-                datetime.strptime(date, '%Y-%m-%d')
                 
                 # Check if dish already exists
                 dish = self.db_manager.execute_query('SELECT id FROM dishes WHERE name = ?', (name,))
@@ -85,37 +87,52 @@ class AddDishWindow:
                 else:
                     dish_id = dish[0][0]
                 
-                # Insert into consumption table
-                self.db_manager.execute_update('''
-                    INSERT INTO consumption (dish_id, amount, date)
-                    VALUES (?, ?, ?)
-                ''', (dish_id, 100, date))  # Assuming 100g as default amount
+                # Only insert into consumption table if date and portion size are provided
+                if date and portion_size:
+                    portion_size = float(portion_size)
+                    # Validate date format
+                    datetime.strptime(date, '%Y-%m-%d')
+                    
+                    self.db_manager.execute_update('''
+                        INSERT INTO consumption (dish_id, date, portion_size)
+                        VALUES (?, ?, ?, ?)
+                    ''', (dish_id, date, portion_size)) 
+                
                 messagebox.showinfo("Success", "Dish added successfully!")
                 self.add_window.destroy()
             except ValueError:
-                messagebox.showwarning("Input Error", "Please enter valid numbers for kcal, protein, fat, and carbs, and a valid date in YYYY-MM-DD format.")
+                messagebox.showwarning("Input Error", "Please enter valid numbers for kcal, protein, fat, carbs, and a valid date in YYYY-MM-DD format if provided.")
         else:
-            messagebox.showwarning("Input Error", "Please provide all details.")
+            messagebox.showwarning("Input Error", "Please provide all required details for the dish.")
 
 class SearchDishWindow:
     def __init__(self, root, db_manager):
         self.db_manager = db_manager
         self.search_window = tk.Toplevel(root)
-        self.search_window.title("Search Dish")
+        self.search_window.title("Dish List")
+        self.search_window.geometry("1000x500")
         self.create_widgets()
 
     def create_widgets(self):
-        tk.Label(self.search_window, text="Dish Name:").grid(row=0, column=0, padx=10, pady=5)
-        self.name_entry = tk.Entry(self.search_window)
+        # Create a frame to center the search components
+        search_frame = tk.Frame(self.search_window)
+        search_frame.pack(pady=20)
+
+        tk.Label(search_frame, text="Dish Name:").grid(row=0, column=0, padx=10, pady=5)
+        self.name_entry = tk.Entry(search_frame, width=30)
         self.name_entry.grid(row=0, column=1, padx=10, pady=5)
 
-        search_button = tk.Button(self.search_window, text="Search", command=self.submit_search)
+        search_button = tk.Button(search_frame, text="Search", command=self.submit_search)
         search_button.grid(row=1, column=0, columnspan=2, pady=10)
 
         self.result_label = tk.Label(self.search_window, text="")
-        self.result_label.grid(row=2, column=0, columnspan=2, pady=10)
+        self.result_label.pack(pady=10)
 
-        self.tree = ttk.Treeview(self.search_window, columns=("Name", "Kcal", "Protein", "Fat", "Carbs"), show="headings")
+        # Create a frame for the Treeview
+        tree_frame = tk.Frame(self.search_window)
+        tree_frame.pack(expand=True, fill=tk.BOTH, padx=20, pady=10)
+
+        self.tree = ttk.Treeview(tree_frame, columns=("Name", "Kcal", "Protein", "Fat", "Carbs"), show="headings")
         self.tree.heading("Name", text="Name")
         self.tree.heading("Kcal", text="Kcal")
         self.tree.heading("Protein", text="Protein")
@@ -176,6 +193,7 @@ class SearchDishWindow:
         entry.bind('<FocusOut>', save_edit)
         entry.bind('<Return>', save_edit)
         entry.focus_set()
+
 class PlotCalorieIntakeWindow:
     def __init__(self, root, db_manager):
         self.db_manager = db_manager
@@ -201,7 +219,7 @@ class PlotCalorieIntakeWindow:
         
         if start_date and end_date:
             data = self.db_manager.execute_query('''
-                SELECT c.date, SUM(d.kcal * c.amount / 100.0) as total_kcal
+                SELECT c.date, SUM(d.kcal * c.portion_size / 100.0)  as total_kcal
                 FROM consumption c
                 JOIN dishes d ON c.dish_id = d.id
                 WHERE c.date BETWEEN ? AND ?
@@ -224,4 +242,3 @@ class PlotCalorieIntakeWindow:
                 messagebox.showinfo("No Data", "No consumption data found for the given period.")
         else:
             messagebox.showwarning("Input Error", "Please provide both start and end dates.")
-
