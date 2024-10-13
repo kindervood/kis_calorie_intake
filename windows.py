@@ -95,7 +95,7 @@ class AddDishWindow:
                     
                     self.db_manager.execute_update('''
                         INSERT INTO consumption (dish_id, date, portion_size)
-                        VALUES (?, ?, ?, ?)
+                        VALUES (?, ?, ?)
                     ''', (dish_id, date, portion_size)) 
                 
                 messagebox.showinfo("Success", "Dish added successfully!")
