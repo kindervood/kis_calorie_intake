@@ -4,6 +4,7 @@
 №6
 ## Как запустить
 ```pip install -r requirements.txt```
+
 Далее запустить файл main.py
 ```python main.py```
 ## Проектные решения
